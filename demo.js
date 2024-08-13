@@ -1,3 +1,9 @@
+function getRandomInt(min, max) {
+  const minCeiled = Math.ceil(min);
+  const maxFloored = Math.floor(max);
+  return Math.floor(Math.random() * (maxFloored - minCeiled) + minCeiled); // The maximum is exclusive and the minimum is inclusive
+}
+
 const demo = () => {
   canvas = document.getElementById("demo");
   ctx = canvas.getContext("2d");
@@ -5,14 +11,15 @@ const demo = () => {
   const WIDTH = 500;
   const HEIGHT = 500;
 
-  let frame = 0;
   let keystates = new Set();
 
   const intro = {
+    init: () => {},
     update: (state) => {
       if (keystates.has(" ")) {
         if (!state.transitioning) {
-          state.next = game;
+          state.next = level;
+          state.next.init()
           state.transition = fadeOut
           state.transitioning = true;
           state.transitionPosition = 0;
@@ -41,7 +48,7 @@ const demo = () => {
       ctx.lineWidth = 2;
       ctx.font = "48px Arial";
       
-      ctx.fillText("intro", 25, 100);
+      ctx.fillText("Crappy Turds", 100, 200);
       if (state.transitioning) {
         let pos = state.transitionPosition / state.duration;
         let c;
@@ -58,11 +65,32 @@ const demo = () => {
     }
   }
 
-  const game = {
+  const levelState = {
+    frame: 0,
+    player: {
+      x: 100,
+      y: HEIGHT/2,
+      thrust: 0,
+      y_vel: 1,
+    },
+    obstacles: [],
+    topObstacles: []
+  };
+
+  const level = {
+    init: () => {
+      levelState.frame = 0;
+      levelState.player.x = 50;
+      levelState.player.y = 250;
+      levelState.player.y_vel = 1;
+      levelState.obstacles = [];
+      levelState.topObstacles = [];
+    },
     update: (state) => {
-      if (keystates.has(" ")) {
+      if (keystates.has("Escape")) {
         if (!state.transitioning) {
           state.next = intro;
+          state.next.init()
           state.transition = fadeOut;
           state.transitioning = true;
           state.transitionPosition = 0;
@@ -83,24 +111,77 @@ const demo = () => {
         }
       }
 
-      state.levelState.x += 1;
-      if (state.levelState.x > 400) {
-        state.levelState.x = 0;
-        state.levelState.y += 5;
+      if (keystates.has(" ")) {
+        levelState.player.y_vel = -2;
+        console.log(levelState.player.y_vel);
       }
+      levelState.player.y_vel += 0.1; //gravity
+      levelState.player.y += levelState.player.y_vel;
+
+      obstacles = []
+      topObstacles = []
+      for (obstacle of levelState.obstacles) {
+        obstacle.x -= 3;
+        if (obstacle.x >= -obstacle.width) {
+          obstacles.push(obstacle)
+        }
+      }
+      levelState.obstacles = obstacles;
+
+      for (topObstacle of levelState.topObstacles) {
+        topObstacle.x -= 3;
+        if (topObstacle.x >= -topObstacle.width) {
+          topObstacles.push(topObstacle)
+        }
+      }
+      levelState.topObstacles = topObstacles;
+      
+      if (levelState.frame % 100 === 0) {
+        let height = getRandomInt(50, 250);
+        levelState.obstacles.push({
+          x: WIDTH,
+          y: HEIGHT,
+          width: 50,
+          height: height,
+        });
+
+        levelState.topObstacles.push({
+          x: WIDTH,
+          y: 0,
+          width: 50,
+          height: 500 - height - 100,
+        });
+      }
+
+      levelState.frame++;
     },
     render: (state) => {
       //ctx.clearRect(0, 0, WIDTH, HEIGHT);
+      // background
       ctx.fillStyle = "#888";
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
-      ctx.fillStyle = "rgb(125, 255, 125)";
-      ctx.lineWidth = 2;
-      ctx.font = "48px Arial";
-      
-      ctx.fillText("level 1", 25, 100);
 
+      // player
       ctx.fillStyle = "#88f"
-      ctx.fillRect(state.levelState.x, state.levelState.y, 10, 10);
+      ctx.fillRect(levelState.player.x, levelState.player.y, 10, 10);
+ 
+      // obstacles
+      ctx.fillStyle = "#8f8";
+      for (obstacle of levelState.obstacles) {
+        ctx.fillRect(obstacle.x, obstacle.y-obstacle.height, obstacle.width, obstacle.y);
+      }
+
+      for (topObstacle of levelState.topObstacles) {
+        ctx.fillRect(topObstacle.x, topObstacle.y, topObstacle.width, topObstacle.height);
+      }
+
+      // level text
+      ctx.fillStyle = "#fff";
+      ctx.lineWidth = 2;
+      ctx.font = "24px Arial";
+      ctx.fillText("level 1", 400, 50);
+
+      // screen transition
       if (state.transitioning) {
         let pos = state.transitionPosition / state.duration;
         let c;
@@ -120,10 +201,6 @@ const demo = () => {
   const fadeIn = 2;
 
   let gameState = {
-    levelState: {
-      x: 0, 
-      y: 10
-    },
     current: intro,
     next: undefined,
     transition: undefined,
@@ -138,7 +215,6 @@ const demo = () => {
 
   const update = () => {
     gameState.current.update(gameState);
-    frame++;
   }
 
   const main = () => {
