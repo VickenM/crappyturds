@@ -87,16 +87,6 @@ const demo = () => {
       levelState.topObstacles = [];
     },
     update: (state) => {
-      if (keystates.has("Escape")) {
-        if (!state.transitioning) {
-          state.next = intro;
-          state.next.init()
-          state.transition = fadeOut;
-          state.transitioning = true;
-          state.transitionPosition = 0;
-        }
-      }
-
       if (state.transitioning) {
         state.transitionPosition++;
         if (state.transitionPosition > state.duration) {
@@ -111,49 +101,69 @@ const demo = () => {
         }
       }
 
-      if (keystates.has(" ")) {
-        levelState.player.y_vel = -2;
-        console.log(levelState.player.y_vel);
-      }
-      levelState.player.y_vel += 0.1; //gravity
-      levelState.player.y += levelState.player.y_vel;
-
-      obstacles = []
-      topObstacles = []
-      for (obstacle of levelState.obstacles) {
-        obstacle.x -= 3;
-        if (obstacle.x >= -obstacle.width) {
-          obstacles.push(obstacle)
+      if (!state.transitioning) {
+        if (keystates.has("Escape")) {
+          state.next = intro;
+          state.next.init()
+          state.transition = fadeOut;
+          state.transitioning = true;
+          state.transitionPosition = 0;
         }
-      }
-      levelState.obstacles = obstacles;
 
-      for (topObstacle of levelState.topObstacles) {
-        topObstacle.x -= 3;
-        if (topObstacle.x >= -topObstacle.width) {
-          topObstacles.push(topObstacle)
+
+        if (keystates.has(" ")) {
+          levelState.player.y_vel = -2;
+          console.log(levelState.player.y_vel);
         }
-      }
-      levelState.topObstacles = topObstacles;
-      
-      if (levelState.frame % 100 === 0) {
-        let height = getRandomInt(50, 250);
-        levelState.obstacles.push({
-          x: WIDTH,
-          y: HEIGHT,
-          width: 50,
-          height: height,
-        });
+        levelState.player.y_vel += 0.1; //gravity
+        levelState.player.y += levelState.player.y_vel;
 
-        levelState.topObstacles.push({
-          x: WIDTH,
-          y: 0,
-          width: 50,
-          height: 500 - height - 100,
-        });
-      }
 
-      levelState.frame++;
+        if (levelState.player.y > 500) {
+          state.next = intro;
+          state.next.init()
+          state.transition = fadeOut;
+          state.transitioning = true;
+          state.transitionPosition = 0;
+        }
+
+        obstacles = []
+        topObstacles = []
+        for (obstacle of levelState.obstacles) {
+          obstacle.x -= 3;
+          if (obstacle.x >= -obstacle.width) {
+            obstacles.push(obstacle)
+          }
+        }
+        levelState.obstacles = obstacles;
+
+        for (topObstacle of levelState.topObstacles) {
+          topObstacle.x -= 3;
+          if (topObstacle.x >= -topObstacle.width) {
+            topObstacles.push(topObstacle)
+          }
+        }
+        levelState.topObstacles = topObstacles;
+        
+        if (levelState.frame % 100 === 0) {
+          let height = getRandomInt(100, 400);
+          levelState.obstacles.push({
+            x: WIDTH,
+            y: HEIGHT,
+            width: 50,
+            height: height,
+          });
+
+          levelState.topObstacles.push({
+            x: WIDTH,
+            y: 0,
+            width: 50,
+            height: 500 - height - 100,
+          });
+        }
+
+        levelState.frame++;
+      }
     },
     render: (state) => {
       //ctx.clearRect(0, 0, WIDTH, HEIGHT);
