@@ -72,9 +72,14 @@ const demo = () => {
       y: HEIGHT/2,
       thrust: 0,
       y_vel: 1,
+      width: 10,
+      height: 10,
     },
     obstacles: [],
-    topObstacles: []
+    topObstacles: [],
+    skylines: [],
+    skylineOffset: 500,
+    obstaclesCleared: 0,
   };
 
   const level = {
@@ -85,6 +90,34 @@ const demo = () => {
       levelState.player.y_vel = 1;
       levelState.obstacles = [];
       levelState.topObstacles = [];
+      levelState.skylines = [
+        {
+          x: 0,
+          y: HEIGHT,
+          width: 50,
+          height: 100
+        },
+        {
+          x: 200,
+          y: HEIGHT,
+          width: 50,
+          height: 200
+        },
+        {
+          x: 370,
+          y: HEIGHT,
+          width: 100,
+          height: 150
+        },
+        {
+          x: 500,
+          y: HEIGHT,
+          width: 50,
+          height: 350
+        },
+      ];
+      levelState.skylineOffset = 500;
+      levelState.obstaclesCleared = 0;
     },
     update: (state) => {
       if (state.transitioning) {
@@ -110,16 +143,13 @@ const demo = () => {
           state.transitionPosition = 0;
         }
 
-
         if (keystates.has(" ")) {
           levelState.player.y_vel = -2;
-          console.log(levelState.player.y_vel);
         }
         levelState.player.y_vel += 0.1; //gravity
         levelState.player.y += levelState.player.y_vel;
 
-
-        if (levelState.player.y > 500) {
+        if (levelState.player.y > HEIGHT) {
           state.next = intro;
           state.next.init()
           state.transition = fadeOut;
@@ -127,8 +157,33 @@ const demo = () => {
           state.transitionPosition = 0;
         }
 
+        for (obstacle of levelState.obstacles) {
+          if ((levelState.player.x + levelState.player.width > obstacle.x) && 
+              (levelState.player.x < obstacle.x + obstacle.width) &&
+              (levelState.player.y > 500 - obstacle.height)) {
+            state.next = intro;
+            state.next.init()
+            state.transition = fadeOut;
+            state.transitioning = true;
+            state.transitionPosition = 0;
+          }
+        }
+
+
+        for (obstacle of levelState.topObstacles) {
+          if ((levelState.player.x + levelState.player.width > obstacle.x) && 
+              (levelState.player.x < obstacle.x + obstacle.width) &&
+              (levelState.player.y < obstacle.height)) {
+            state.next = intro;
+            state.next.init()
+            state.transition = fadeOut;
+            state.transitioning = true;
+            state.transitionPosition = 0;
+          }
+        }
+
+        // move obstacles
         obstacles = []
-        topObstacles = []
         for (obstacle of levelState.obstacles) {
           obstacle.x -= 3;
           if (obstacle.x >= -obstacle.width) {
@@ -137,14 +192,18 @@ const demo = () => {
         }
         levelState.obstacles = obstacles;
 
+        topObstacles = []
         for (topObstacle of levelState.topObstacles) {
           topObstacle.x -= 3;
           if (topObstacle.x >= -topObstacle.width) {
             topObstacles.push(topObstacle)
+          } else {
+            levelState.obstaclesCleared++;
           }
         }
         levelState.topObstacles = topObstacles;
         
+        // create new obstacles
         if (levelState.frame % 100 === 0) {
           let height = getRandomInt(100, 400);
           levelState.obstacles.push({
@@ -158,22 +217,33 @@ const demo = () => {
             x: WIDTH,
             y: 0,
             width: 50,
-            height: 500 - height - 100,
+            height: HEIGHT - height - 100,
           });
         }
 
+        // skyline
+        levelState.skylineOffset -= 1;
+        if (levelState.skylineOffset < -WIDTH-100) {
+          levelState.skylineOffset = 500;
+        }
         levelState.frame++;
       }
     },
+
     render: (state) => {
       //ctx.clearRect(0, 0, WIDTH, HEIGHT);
       // background
-      ctx.fillStyle = "#888";
+      ctx.fillStyle = "#8df";
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
+      ctx.fillStyle = "#c06";
+      for (skyline of levelState.skylines) {
+        ctx.fillRect(skyline.x + levelState.skylineOffset, skyline.y-skyline.height, skyline.width, skyline.y);
+      }
+
       // player
-      ctx.fillStyle = "#88f"
-      ctx.fillRect(levelState.player.x, levelState.player.y, 10, 10);
+      ctx.fillStyle = "#66d"
+      ctx.fillRect(levelState.player.x, levelState.player.y, levelState.player.width, levelState.player.height);
  
       // obstacles
       ctx.fillStyle = "#8f8";
@@ -189,7 +259,7 @@ const demo = () => {
       ctx.fillStyle = "#fff";
       ctx.lineWidth = 2;
       ctx.font = "24px Arial";
-      ctx.fillText("level 1", 400, 50);
+      ctx.fillText(`Cleared: ${levelState.obstaclesCleared}`, 350, 50);
 
       // screen transition
       if (state.transitioning) {
