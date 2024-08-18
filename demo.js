@@ -8,18 +8,39 @@ const demo = () => {
   canvas = document.getElementById("demo");
   ctx = canvas.getContext("2d");
 
-  const WIDTH = 500;
-  const HEIGHT = 500;
+  ctx.font = "48px Arial";
+  console.log(ctx.measureText("P"));
+  console.log(ctx.measureText("r"));
+  console.log(ctx.measureText("e"));
+  console.log(ctx.measureText("s"));
+
+  const WIDTH = canvas.getAttribute('width');
+  const HEIGHT =canvas.getAttribute('height');
+
+  const colors = {
+    neutral: '#888',
+    text: '#fff',
+    logotext: '#f88',
+    sky: '#8df',
+    background: '#c06',
+    player: '#66d',
+    obstacle: '#8f8',
+  }
 
   let keystates = new Set();
+
+  const introState = {
+    frame: 0,
+  }
 
   const intro = {
     init: () => {},
     update: (state) => {
       if (keystates.has(" ")) {
+        keystates.delete(" ");
         if (!state.transitioning) {
           state.next = level;
-          state.next.init()
+          state.next.init();
           state.transition = fadeOut
           state.transitioning = true;
           state.transitionPosition = 0;
@@ -40,15 +61,30 @@ const demo = () => {
         }
       }
 
+      introState.frame++;
     },
     render: (state) => {
-      ctx.fillStyle = "#888";
+      ctx.fillStyle = colors.sky;
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
-      ctx.fillStyle = "rgb(255, 125, 125)";
-      ctx.lineWidth = 2;
+      ctx.fillStyle = colors.logotext;
+      ctx.lineWidth = 1;
       ctx.font = "48px Arial";
-      
-      ctx.fillText("Crappy Turds", 100, 200);
+     
+      metric = ctx.measureText("Crappy Turds");
+      const width = metric['width']
+      ctx.fillText("Crappy Turds", (WIDTH/2)-(width/2), 200);
+
+      ctx.fillStyle = colors.logotext;
+      ctx.font = "24px Arial";
+      const pressstart = ['P', 'r', 'e', 's', 's', '  ', 's', 't', 'a', 'r', 't']
+      let x_offset = 0;
+      for ([index, letter] of pressstart.entries()) {
+        let y_offset = 15*Math.sin(0.1 * (index + introState.frame))
+        let measure = ctx.measureText(letter);
+        ctx.fillText(letter, 200 + x_offset, 300 + y_offset);
+        x_offset += measure.actualBoundingBoxRight;
+      }
+
       if (state.transitioning) {
         let pos = state.transitionPosition / state.duration;
         let c;
@@ -145,7 +181,9 @@ const demo = () => {
 
         if (keystates.has(" ")) {
           levelState.player.y_vel = -2;
+          // keystates.delete(" ");
         }
+
         levelState.player.y_vel += 0.1; //gravity
         levelState.player.y += levelState.player.y_vel;
 
@@ -233,20 +271,20 @@ const demo = () => {
     render: (state) => {
       //ctx.clearRect(0, 0, WIDTH, HEIGHT);
       // background
-      ctx.fillStyle = "#8df";
+      ctx.fillStyle = colors.sky;
       ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-      ctx.fillStyle = "#c06";
+      ctx.fillStyle = colors.background;
       for (skyline of levelState.skylines) {
         ctx.fillRect(skyline.x + levelState.skylineOffset, skyline.y-skyline.height, skyline.width, skyline.y);
       }
 
       // player
-      ctx.fillStyle = "#66d"
+      ctx.fillStyle = colors.player;
       ctx.fillRect(levelState.player.x, levelState.player.y, levelState.player.width, levelState.player.height);
  
       // obstacles
-      ctx.fillStyle = "#8f8";
+      ctx.fillStyle = colors.obstacle;
       for (obstacle of levelState.obstacles) {
         ctx.fillRect(obstacle.x, obstacle.y-obstacle.height, obstacle.width, obstacle.y);
       }
@@ -256,7 +294,7 @@ const demo = () => {
       }
 
       // level text
-      ctx.fillStyle = "#fff";
+      ctx.fillStyle = colors.text;
       ctx.lineWidth = 2;
       ctx.font = "24px Arial";
       ctx.fillText(`Cleared: ${levelState.obstaclesCleared}`, 350, 50);
@@ -308,7 +346,12 @@ const demo = () => {
   window.addEventListener("keyup", (event) => {
     keystates.delete(event.key);
   });
-
+  window.addEventListener("mousedown", (event) => {
+    keystates.add(" ");
+  });
+  window.addEventListener("mouseup", (event) => {
+    keystates.delete(" ");
+  });
   setInterval(main, 1000.0/60);
 }
 
