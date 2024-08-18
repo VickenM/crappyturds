@@ -352,6 +352,12 @@ const demo = () => {
   window.addEventListener("mouseup", (event) => {
     keystates.delete(" ");
   });
+  window.addEventListener("touchstart", (event) => {
+    keystates.add(" ");
+  });
+  window.addEventListener("touchend", (event) => {
+    keystates.delete(" ");
+  });
   setInterval(main, 1000.0/60);
 }
 
