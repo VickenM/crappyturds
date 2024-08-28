@@ -9,13 +9,13 @@ const demo = () => {
   ctx = canvas.getContext("2d");
 
   ctx.font = "48px Arial";
-  console.log(ctx.measureText("P"));
-  console.log(ctx.measureText("r"));
-  console.log(ctx.measureText("e"));
-  console.log(ctx.measureText("s"));
+//  console.log(ctx.measureText("P"));
+//  console.log(ctx.measureText("r"));
+//  console.log(ctx.measureText("e"));
+//  console.log(ctx.measureText("s"));
 
-  const WIDTH = canvas.getAttribute('width');
-  const HEIGHT =canvas.getAttribute('height');
+  const WIDTH = Number(canvas.getAttribute('width'));
+  const HEIGHT = Number(canvas.getAttribute('height'));
 
   const colors = {
     neutral: '#888',
@@ -116,10 +116,20 @@ const demo = () => {
     skylines: [],
     skylineOffset: 500,
     obstaclesCleared: 0,
+    enemies: [],
   };
 
   const level = {
-    init: () => {
+    init: async () => {
+      const image = await Promise.resolve(new Promise((resolve, reject) => {
+        const image = new Image();
+        image.src = "kid.png";
+        image.onload = () => resolve(image);
+        image.onerror = () => reject("failed to lolad image kid.png");
+      }));
+
+      levelState.image = image;
+      levelState.enemies = [];
       levelState.frame = 0;
       levelState.player.x = 50;
       levelState.player.y = 250;
@@ -207,7 +217,6 @@ const demo = () => {
           }
         }
 
-
         for (obstacle of levelState.topObstacles) {
           if ((levelState.player.x + levelState.player.width > obstacle.x) && 
               (levelState.player.x < obstacle.x + obstacle.width) &&
@@ -219,6 +228,16 @@ const demo = () => {
             state.transitionPosition = 0;
           }
         }
+
+
+        enemies = [];
+        for (enemy of levelState.enemies) {
+          enemy.x -= 3;
+          if (enemy.x >= -75) {
+            enemies.push(enemy);
+          }
+        }
+        levelState.enemies = enemies;
 
         // move obstacles
         obstacles = []
@@ -240,7 +259,7 @@ const demo = () => {
           }
         }
         levelState.topObstacles = topObstacles;
-        
+ 
         // create new obstacles
         if (levelState.frame % 100 === 0) {
           let height = getRandomInt(100, 400);
@@ -250,6 +269,11 @@ const demo = () => {
             width: 50,
             height: height,
           });
+
+          if (getRandomInt(1, 100) < 50) {
+            levelState.enemies.push({x:WIDTH+5, y:500-50-height})
+            console.log(WIDTH+5)
+          }
 
           levelState.topObstacles.push({
             x: WIDTH,
@@ -282,7 +306,14 @@ const demo = () => {
       // player
       ctx.fillStyle = colors.player;
       ctx.fillRect(levelState.player.x, levelState.player.y, levelState.player.width, levelState.player.height);
- 
+
+      // enemies
+      for (enemy of levelState.enemies) {
+        ctx.drawImage(levelState.image, 
+          enemy.x, enemy.y, 
+          50 * (levelState.image.width/levelState.image.height), 50);
+      }
+
       // obstacles
       ctx.fillStyle = colors.obstacle;
       for (obstacle of levelState.obstacles) {
@@ -327,14 +358,13 @@ const demo = () => {
     duration: 50,
   }
 
-  const render = () => {
-    gameState.current.render(gameState);
-  }
-
   const update = () => {
     gameState.current.update(gameState);
   }
 
+  const render = () => {
+    gameState.current.render(gameState);
+  }
   const main = () => {
     update();
     render();
