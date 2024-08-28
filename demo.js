@@ -108,8 +108,9 @@ const demo = () => {
       y: HEIGHT/2,
       thrust: 0,
       y_vel: 1,
-      width: 10,
-      height: 10,
+      width: 50,
+      height: 50,
+      image: null,
     },
     obstacles: [],
     topObstacles: [],
@@ -117,20 +118,40 @@ const demo = () => {
     skylineOffset: 500,
     obstaclesCleared: 0,
     enemies: [],
+    enemyImage: null,
+    playerImages: [],
   };
 
   const level = {
     init: async () => {
-      const image = await Promise.resolve(new Promise((resolve, reject) => {
+      levelState.playerImages.push(
+        await Promise.resolve(new Promise((resolve, reject) => {
+          const image = new Image();
+          image.src = "armen1.png";
+          image.onload = () => resolve(image);
+          image.onerror = () => reject("failed to lolad image armen1.png");
+        }))
+      );
+
+      levelState.playerImages.push(
+        await Promise.resolve(new Promise((resolve, reject) => {
+          const image = new Image();
+          image.src = "armen2.png";
+          image.onload = () => resolve(image);
+          image.onerror = () => reject("failed to lolad image armen2.png");
+        }))
+      );
+
+      levelState.enemyImage = await Promise.resolve(new Promise((resolve, reject) => {
         const image = new Image();
         image.src = "kid.png";
         image.onload = () => resolve(image);
         image.onerror = () => reject("failed to lolad image kid.png");
       }));
 
-      levelState.image = image;
       levelState.enemies = [];
       levelState.frame = 0;
+      levelState.player.image = levelState.playerImages[0];
       levelState.player.x = 50;
       levelState.player.y = 250;
       levelState.player.y_vel = 1;
@@ -189,8 +210,10 @@ const demo = () => {
           state.transitionPosition = 0;
         }
 
+        levelState.player.image = levelState.playerImages[0];
         if (keystates.has(" ")) {
           levelState.player.y_vel = -2;
+          levelState.player.image = levelState.playerImages[1];
           // keystates.delete(" ");
         }
 
@@ -304,14 +327,18 @@ const demo = () => {
       }
 
       // player
-      ctx.fillStyle = colors.player;
-      ctx.fillRect(levelState.player.x, levelState.player.y, levelState.player.width, levelState.player.height);
+      //ctx.fillStyle = colors.player;
+      //ctx.fillRect(levelState.player.x, levelState.player.y, levelState.player.width, levelState.player.height);
+
+      ctx.drawImage(levelState.player.image, 
+        levelState.player.x, levelState.player.y,
+        50, 50);
 
       // enemies
       for (enemy of levelState.enemies) {
-        ctx.drawImage(levelState.image, 
+        ctx.drawImage(levelState.enemyImage, 
           enemy.x, enemy.y, 
-          50 * (levelState.image.width/levelState.image.height), 50);
+          50 * (levelState.enemyImage.width/levelState.enemyImage.height), 50);
       }
 
       // obstacles
